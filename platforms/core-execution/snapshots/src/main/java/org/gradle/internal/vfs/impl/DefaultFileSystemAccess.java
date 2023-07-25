@@ -20,11 +20,13 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Interner;
 import com.google.common.util.concurrent.Striped;
 import org.gradle.internal.file.FileMetadata;
-import org.gradle.internal.file.excludes.FileSystemDefaultExcludesListener;
 import org.gradle.internal.file.FileType;
 import org.gradle.internal.file.Stat;
+import org.gradle.internal.file.excludes.FileSystemDefaultExcludesListener;
 import org.gradle.internal.hash.FileHasher;
 import org.gradle.internal.hash.HashCode;
+import org.gradle.internal.hash.Hasher;
+import org.gradle.internal.hash.Hashing;
 import org.gradle.internal.snapshot.FileSystemLocationSnapshot;
 import org.gradle.internal.snapshot.FileSystemSnapshot;
 import org.gradle.internal.snapshot.MissingFileSnapshot;
@@ -109,7 +111,10 @@ public class DefaultFileSystemAccess implements FileSystemAccess, FileSystemDefa
                             () -> virtualFileSystem.findSnapshot(location)
                                 .orElseGet(() -> {
                                     HashCode hashCode = hasher.hash(file, fileMetadata.getLength(), fileMetadata.getLastModified());
-                                    return vfsStorer.store(new RegularFileSnapshot(location, file.getName(), hashCode, fileMetadata));
+                                    Hasher combinedHasher = Hashing.newHasher(); //TODO: should we support symlinks here?
+                                    combinedHasher.putHash(hashCode);
+                                    combinedHasher.putNull();
+                                    return vfsStorer.store(new RegularFileSnapshot(location, file.getName(), combinedHasher.hash(), fileMetadata));
                                 })));
                     default:
                         throw new IllegalArgumentException("Unknown file type: " + fileMetadata.getType());
@@ -148,7 +153,10 @@ public class DefaultFileSystemAccess implements FileSystemAccess, FileSystemDefa
             switch (fileMetadata.getType()) {
                 case RegularFile:
                     HashCode hash = hasher.hash(file, fileMetadata.getLength(), fileMetadata.getLastModified());
-                    return vfsStorer.store(new RegularFileSnapshot(location, file.getName(), hash, fileMetadata));
+                    Hasher combinedHasher = Hashing.newHasher(); //TODO: should we support symlinks here?
+                    combinedHasher.putHash(hash);
+                    combinedHasher.putNull();
+                    return vfsStorer.store(new RegularFileSnapshot(location, file.getName(), combinedHasher.hash(), fileMetadata));
                 case Missing:
                     return vfsStorer.store(new MissingFileSnapshot(location, fileMetadata.getAccessType()));
                 case Directory:
