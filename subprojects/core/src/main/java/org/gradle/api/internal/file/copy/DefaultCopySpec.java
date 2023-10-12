@@ -90,7 +90,7 @@ public class DefaultCopySpec implements CopySpecInternal {
     private Boolean includeEmptyDirs;
     private DuplicatesStrategy duplicatesStrategy = DuplicatesStrategy.INHERIT;
     private String filteringCharset;
-    private LinksStrategy preserveLinks = null;
+    private final Property<LinksStrategy> linksStrategy;
     private final List<CopySpecListener> listeners = Lists.newLinkedList();
     private PatternFilterable preserve = new PatternSet();
 
@@ -108,6 +108,7 @@ public class DefaultCopySpec implements CopySpecInternal {
         this.patternSet = patternSet;
         this.filePermissions = objectFactory.property(ConfigurableFilePermissions.class);
         this.dirPermissions = objectFactory.property(ConfigurableFilePermissions.class);
+        this.linksStrategy = objectFactory.property(LinksStrategy.class);
     }
 
     public DefaultCopySpec(FileCollectionFactory fileCollectionFactory, ObjectFactory objectFactory, Instantiator instantiator, Factory<PatternSet> patternSetFactory, @Nullable String destPath, FileCollection source, PatternSet patternSet, Collection<? extends Action<? super FileCopyDetails>> copyActions, Collection<CopySpecInternal> children) {
@@ -592,13 +593,8 @@ public class DefaultCopySpec implements CopySpecInternal {
     }
 
     @Override
-    public LinksStrategy getPreserveLinks() {
-        return buildRootResolver().getPreserveLinks();
-    }
-
-    @Override
-    public void setPreserveLinks(@Nullable LinksStrategy preserveLinks) {
-        this.preserveLinks = preserveLinks;
+    public Property<LinksStrategy> getLinksStrategy() {
+        return buildRootResolver().getLinksStrategy();
     }
 
     private static class MapBackedExpandAction implements Action<FileCopyDetails> {
@@ -869,14 +865,14 @@ public class DefaultCopySpec implements CopySpecInternal {
         }
 
         @Override
-        public LinksStrategy getPreserveLinks() {
-            if (preserveLinks != null) {
-                return preserveLinks;
+        public Property<LinksStrategy> getLinksStrategy() {
+            if (linksStrategy.isPresent()) {
+                return linksStrategy;
             }
             if (parentResolver != null) {
-                return parentResolver.getPreserveLinks();
+                return parentResolver.getLinksStrategy();
             }
-            return LinksStrategy.NONE;
+            return linksStrategy;
         }
     }
 
