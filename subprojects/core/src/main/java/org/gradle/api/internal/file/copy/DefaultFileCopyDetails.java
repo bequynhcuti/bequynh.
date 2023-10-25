@@ -205,9 +205,11 @@ public class DefaultFileCopyDetails extends AbstractFileTreeElement implements F
             return permissions;
         }
 
-        Provider<FilePermissions> specMode = getSpecMode();
-        if (specMode.isPresent()) {
-            return specMode.get();
+        if (!isSymbolicLink()) {
+            Provider<FilePermissions> specMode = getSpecMode();
+            if (specMode.isPresent()) {
+                return specMode.get();
+            }
         }
 
         return fileDetails.getPermissions();
