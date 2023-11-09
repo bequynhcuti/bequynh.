@@ -26,11 +26,11 @@ import org.gradle.api.internal.artifacts.transform.ToPlannedTransformStepConvert
 import org.gradle.api.internal.cache.CacheConfigurationsInternal;
 import org.gradle.api.internal.cache.StringInterner;
 import org.gradle.api.internal.changedetection.state.DefaultExecutionHistoryCacheAccess;
-import org.gradle.cache.CacheBuilder;
 import org.gradle.cache.UnscopedCacheBuilderFactory;
 import org.gradle.cache.internal.CrossBuildInMemoryCacheFactory;
 import org.gradle.cache.internal.InMemoryCacheDecoratorFactory;
 import org.gradle.cache.internal.UsedGradleVersions;
+import org.gradle.cache.internal.filelock.LockOptionsBuilder;
 import org.gradle.cache.scopes.GlobalScopedCacheBuilderFactory;
 import org.gradle.execution.plan.ToPlannedNodeConverter;
 import org.gradle.internal.Try;
@@ -111,7 +111,8 @@ public class DependencyManagementGradleUserHomeScopeServices {
         return new ImmutableTransformWorkspaceServices(
             unscopedCacheBuilderFactory
                 .cache(artifactCaches.getWritableCacheMetadata().getTransformsStoreDirectory())
-                .withCrossVersionCache(CacheBuilder.LockTarget.DefaultTarget)
+                .withCrossVersionCache()
+                .withLockOptions(new LockOptionsBuilder())
                 .withDisplayName("Artifact transforms cache"),
             fileAccessTimeJournal,
             executionHistoryStore,
