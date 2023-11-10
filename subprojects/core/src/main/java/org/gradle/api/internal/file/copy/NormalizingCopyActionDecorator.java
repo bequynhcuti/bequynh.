@@ -31,6 +31,7 @@ import org.gradle.api.internal.file.AbstractFileTreeElement;
 import org.gradle.api.internal.file.CopyActionProcessingStreamAction;
 import org.gradle.api.tasks.WorkResult;
 import org.gradle.internal.file.Chmod;
+import org.gradle.util.internal.GFileUtils;
 
 import javax.annotation.Nullable;
 import java.io.File;
@@ -115,6 +116,17 @@ public class NormalizingCopyActionDecorator implements CopyAction {
             super(chmod);
             this.path = path;
             this.includeEmptyDirs = includeEmptyDirs;
+        }
+
+        @Override
+        public boolean copyTo(File target) { //TODO: temprorary. Remove after #27011 is merged
+            validateTimeStamps();
+            try {
+                GFileUtils.mkdirs(target);
+                return true;
+            } catch (Exception e) {
+                throw new CopyFileElementException(String.format("Could not copy %s to '%s'.", getName(), target), e);
+            }
         }
 
         @Override
