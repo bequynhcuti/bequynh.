@@ -337,6 +337,97 @@ class IsolatedProjectsToolingApiIdeaProjectIntegrationTest extends AbstractIsola
         checkIdeaProject(ideaModel, expectedIdeaModel)
     }
 
+    // TODO: fix before merge
+    @Ignore
+    def "ensures unique name for all Idea modules in composite"() {
+        singleProjectBuildInRootFolder("buildA") {
+            buildFile << """
+                apply plugin: 'java'
+                dependencies {
+                    testImplementation "org.test:b1:1.0"
+
+                    testImplementation "org.test:buildC:1.0"
+                    testImplementation "org.buildD:b1:1.0"
+                }
+            """
+            settingsFile << """
+                includeBuild 'buildB'
+                includeBuild 'buildC'
+                includeBuild 'buildD'
+            """
+        }
+
+        multiProjectBuildInSubFolder("buildB", ['b1', 'b2']) {
+            buildFile << """
+                apply plugin: 'java'
+            """
+            project("b1").buildFile << """
+                apply plugin: 'java'
+                dependencies {
+                    testImplementation "org.test:buildC:1.0"
+                }
+            """
+            project("b2").buildFile << """
+                apply plugin: 'java'
+            """
+        }
+
+        singleProjectBuildInSubfolder("buildC") {
+            buildFile << """
+                apply plugin: 'java'
+            """
+        }
+
+        multiProjectBuildInSubFolder("buildD", ["b1", "buildC"]) {
+            buildFile << """
+                apply plugin: 'java'
+                group = 'org.buildD'
+            """
+
+            ["b1", "buildC"].each {
+                project(it).buildFile << """
+                    apply plugin: 'java'
+                    group = 'org.buildD'
+                """
+            }
+        }
+
+        when:
+        executer.withArguments(ENABLE_CLI)
+        def allProjects = runBuildAction(new FetchAllIdeaProjects())
+
+        then:
+        fixture.assertStateStored {
+            buildModelCreated()
+            // IdeaProject, intermediate IsolatedGradleProjectInternal, IsolatedIdeaModuleInternal
+            modelsCreated(":", 3)
+            // intermediate IsolatedGradleProject, IsolatedIdeaModule
+            modelsCreated(":buildB", 2)
+            modelsCreated(":buildB:b1", 2)
+            modelsCreated(":buildB:b2", 2)
+            modelsCreated(":buildC", 2)
+            modelsCreated(":buildD", 2)
+            modelsCreated(":buildD:b1", 2)
+            modelsCreated(":buildD:buildC", 2)
+        }
+        allProjects.allIdeaProjects.name == ['buildA', 'buildB', 'buildC', 'buildD']
+
+        // This is not really correct: the IdeaProject for including build should contain all IDEA modules
+        // However, it appears that IDEA 2017 depends on this behaviour, and iterates over the included builds to get all modules
+        allProjects.rootIdeaProject.name == 'buildA'
+        allProjects.rootIdeaProject.modules.name == ['buildA']
+
+        def moduleA = allProjects.rootIdeaProject.modules[0]
+        moduleA.dependencies.each {
+            assert it instanceof IdeaModuleDependency
+        }
+        moduleA.dependencies.targetModuleName == ['buildB-b1', 'buildA-buildC', 'buildD-b1']
+
+        allProjects.getIdeaProject('buildB').modules.name == ['buildB', 'buildB-b1', 'b2']
+        allProjects.getIdeaProject('buildC').modules.name == ['buildA-buildC']
+        allProjects.getIdeaProject('buildD').modules.name == ['buildD', 'buildD-b1', 'buildD-buildC']
+    }
+
     private static void checkIdeaProject(IdeaProject actual, IdeaProject expected) {
         checkModel(actual, expected, [
             { it.parent },
