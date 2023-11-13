@@ -17,6 +17,7 @@
 package org.gradle.tooling.provider.model.internal;
 
 import org.gradle.api.NonNullApi;
+import org.gradle.api.Plugin;
 import org.gradle.api.Project;
 import org.gradle.internal.service.scopes.Scopes;
 import org.gradle.internal.service.scopes.ServiceScope;
@@ -46,5 +47,11 @@ public interface IntermediateToolingModelProvider {
      * Model name to find the underlying builder is derived from the binary name of the {@code modelType}.
      */
     <T> List<T> getModels(List<Project> targets, Class<T> modelType, Object modelBuilderParameter);
+
+    /**
+     * Applies a plugin of a given type to the given projects.
+     */
+    // TODO: how would this work with caching?
+    <P extends Plugin<Project>> void applyPlugin(List<Project> targets, Class<P> pluginClass);
 
 }

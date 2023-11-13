@@ -17,6 +17,7 @@
 package org.gradle.plugins.ide.internal.tooling;
 
 import org.gradle.api.NonNullApi;
+import org.gradle.api.Plugin;
 import org.gradle.api.Project;
 import org.gradle.api.internal.project.ProjectInternal;
 import org.gradle.api.internal.project.ProjectState;
@@ -42,6 +43,16 @@ public class DefaultIntermediateToolingModelProvider implements IntermediateTool
     @Override
     public <T> List<T> getModels(List<Project> targets, Class<T> modelType, Object modelBuilderParameter) {
         return getModelsImpl(targets, modelType, modelBuilderParameter);
+    }
+
+    @Override
+    public <P extends Plugin<Project>> void applyPlugin(List<Project> targets, Class<P> pluginClass) {
+        List<Object> rawModels = getModels(targets, PluginApplyingBuilder.MODEL_NAME, createPluginApplyingParameter(pluginClass));
+        ensureModelTypes(Boolean.class, rawModels);
+    }
+
+    private static <P extends Plugin<Project>> PluginApplyingParameter createPluginApplyingParameter(Class<P> pluginClass) {
+        return () -> pluginClass;
     }
 
     private static <T> List<T> getModelsImpl(List<Project> targets, Class<T> modelType, @Nullable Object modelBuilderParameter) {

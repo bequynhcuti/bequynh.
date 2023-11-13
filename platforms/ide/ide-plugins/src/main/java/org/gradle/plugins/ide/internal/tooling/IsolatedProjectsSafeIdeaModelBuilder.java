@@ -20,6 +20,11 @@ import com.google.common.collect.Streams;
 import org.gradle.api.JavaVersion;
 import org.gradle.api.NonNullApi;
 import org.gradle.api.Project;
+import org.gradle.api.internal.GradleInternal;
+import org.gradle.api.internal.project.ProjectInternal;
+import org.gradle.internal.build.BuildState;
+import org.gradle.internal.build.IncludedBuildState;
+import org.gradle.internal.composite.IncludedBuildInternal;
 import org.gradle.plugins.ide.idea.IdeaPlugin;
 import org.gradle.plugins.ide.idea.internal.IdeaModuleSupport;
 import org.gradle.plugins.ide.idea.internal.IdeaProjectInternal;
@@ -29,9 +34,9 @@ import org.gradle.plugins.ide.internal.tooling.idea.DefaultIdeaJavaLanguageSetti
 import org.gradle.plugins.ide.internal.tooling.idea.DefaultIdeaLanguageLevel;
 import org.gradle.plugins.ide.internal.tooling.idea.DefaultIdeaModule;
 import org.gradle.plugins.ide.internal.tooling.idea.DefaultIdeaProject;
+import org.gradle.plugins.ide.internal.tooling.idea.IsolatedIdeaModuleInternal;
 import org.gradle.plugins.ide.internal.tooling.java.DefaultInstalledJdk;
 import org.gradle.plugins.ide.internal.tooling.model.DefaultGradleProject;
-import org.gradle.plugins.ide.internal.tooling.idea.IsolatedIdeaModuleInternal;
 import org.gradle.tooling.provider.model.internal.IntermediateToolingModelProvider;
 
 import javax.annotation.Nullable;
@@ -70,9 +75,29 @@ public class IsolatedProjectsSafeIdeaModelBuilder implements IdeaModelBuilderInt
     public DefaultIdeaProject buildForRoot(Project project, boolean offlineDependencyResolution) {
         // TODO: support the case when target is not root project
         Project root = project.getRootProject();
-        // TODO: do we need to apply the idea plugin to all included builds? (vanilla builder does it)
+        // Ensure unique module names for dependencies substituted from included builds
+        applyIdeaProjectToBuildTree(root);
         IsolatedIdeaModuleParameter parameter = createParameter(offlineDependencyResolution);
         return buildRoot(root, parameter);
+    }
+
+    private void applyIdeaProjectToBuildTree(Project root) {
+        applyIdeaPlugin((ProjectInternal) root, new ArrayList<>());
+    }
+
+    private void applyIdeaPlugin(ProjectInternal root, List<GradleInternal> alreadyProcessed) {
+        intermediateToolingModelProvider.applyPlugin(new ArrayList<>(root.getAllprojects()), IdeaPlugin.class);
+
+        for (IncludedBuildInternal reference : root.getGradle().includedBuilds()) {
+            BuildState target = reference.getTarget();
+            if (target instanceof IncludedBuildState) {
+                GradleInternal build = target.getMutableModel();
+                if (!alreadyProcessed.contains(build)) {
+                    alreadyProcessed.add(build);
+                    applyIdeaPlugin(build.getRootProject(), alreadyProcessed);
+                }
+            }
+        }
     }
 
     private DefaultIdeaProject buildRoot(Project rootProject, IsolatedIdeaModuleParameter parameter) {
