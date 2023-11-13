@@ -25,6 +25,7 @@ import org.gradle.tooling.model.idea.IdeaModule
 import org.gradle.tooling.model.idea.IdeaModuleDependency
 import org.gradle.tooling.model.idea.IdeaProject
 import org.gradle.tooling.model.idea.IdeaSingleEntryLibraryDependency
+import spock.lang.Ignore
 
 import static org.gradle.integtests.tooling.fixture.ToolingApiModelChecker.checkGradleProject
 import static org.gradle.integtests.tooling.fixture.ToolingApiModelChecker.checkModel
@@ -110,6 +111,40 @@ class IsolatedProjectsToolingApiIdeaProjectIntegrationTest extends AbstractIsola
             // intermediate IsolatedGradleProject, IsolatedIdeaModule
             modelsCreated(":lib1", 2)
             modelsCreated(":lib1:lib11", 2)
+        }
+
+        then:
+        checkIdeaProject(ideaModel, expectedIdeaModel)
+    }
+
+    // TODO: fix before merge
+    @Ignore
+    def "can fetch IdeaProject model for non-root project"() {
+        settingsFile << """
+            rootProject.name = 'root'
+            include(":lib1")
+        """
+
+        when: "fetching without Isolated Projects"
+        def expectedIdeaModel = runBuildAction(new FetchIdeaProjectForTarget(":lib1"))
+
+        then:
+        fixture.assertNoConfigurationCache()
+
+        // Returned model is for root project even though the target is not the root
+        expectedIdeaModel.name == "root"
+        expectedIdeaModel.modules.name == ["root", "lib1"]
+
+        when: "fetching with Isolated Projects"
+        executer.withArguments(ENABLE_CLI)
+        def ideaModel = runBuildAction(new FetchIdeaProjectForTarget(":lib1"))
+
+        then:
+        fixture.assertStateStored {
+            // IdeaProject, intermediate IsolatedGradleProjectInternal, IsolatedIdeaModuleInternal
+            modelsCreated(":", 3)
+            // intermediate IsolatedGradleProject, IsolatedIdeaModule
+            modelsCreated(":lib1", 2)
         }
 
         then:
@@ -259,6 +294,43 @@ class IsolatedProjectsToolingApiIdeaProjectIntegrationTest extends AbstractIsola
             // intermediate IsolatedGradleProject, IsolatedIdeaModule
             modelsCreated(":api", 2)
             modelsCreated(":impl", 2)
+        }
+
+        then:
+        checkIdeaProject(ideaModel, expectedIdeaModel)
+    }
+
+    // TODO: fix before merge
+    @Ignore
+    def "can fetch IdeaProject model for Scala projects"() {
+        settingsFile << """
+            rootProject.name = 'root'
+            include(":lib1")
+        """
+
+        file("lib1/build.gradle") << """
+            plugins {
+                id 'scala'
+            }
+        """
+
+        when: "fetching without Isolated Projects"
+        def expectedIdeaModel = fetchModel(IdeaProject)
+
+        then:
+        fixture.assertNoConfigurationCache()
+        expectedIdeaModel.modules.name == ["root", "lib1"]
+
+        when: "fetching with Isolated Projects"
+        executer.withArguments(ENABLE_CLI)
+        def ideaModel = fetchModel(IdeaProject)
+
+        then:
+        fixture.assertStateStored {
+            // IdeaProject, intermediate IsolatedGradleProjectInternal, IsolatedIdeaModuleInternal
+            modelsCreated(":", 3)
+            // intermediate IsolatedGradleProject, IsolatedIdeaModule
+            modelsCreated(":lib1", 2)
         }
 
         then:
