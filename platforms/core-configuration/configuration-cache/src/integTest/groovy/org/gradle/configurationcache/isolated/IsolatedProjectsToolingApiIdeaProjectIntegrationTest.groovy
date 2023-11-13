@@ -26,9 +26,9 @@ import org.gradle.tooling.model.idea.IdeaModuleDependency
 import org.gradle.tooling.model.idea.IdeaProject
 import org.gradle.tooling.model.idea.IdeaSingleEntryLibraryDependency
 
-import static org.gradle.configurationcache.isolated.ToolingModelChecker.checkGradleProject
-import static org.gradle.configurationcache.isolated.ToolingModelChecker.checkModel
-import static org.gradle.configurationcache.isolated.ToolingModelChecker.checkProjectIdentifier
+import static org.gradle.integtests.tooling.fixture.ToolingApiModelChecker.checkGradleProject
+import static org.gradle.integtests.tooling.fixture.ToolingApiModelChecker.checkModel
+import static org.gradle.integtests.tooling.fixture.ToolingApiModelChecker.checkProjectIdentifier
 
 class IsolatedProjectsToolingApiIdeaProjectIntegrationTest extends AbstractIsolatedProjectsToolingApiIntegrationTest {
 
