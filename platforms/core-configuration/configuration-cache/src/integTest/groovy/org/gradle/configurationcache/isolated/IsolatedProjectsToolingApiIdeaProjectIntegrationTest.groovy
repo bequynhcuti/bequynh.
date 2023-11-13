@@ -25,6 +25,7 @@ import org.gradle.tooling.model.idea.IdeaModule
 import org.gradle.tooling.model.idea.IdeaModuleDependency
 import org.gradle.tooling.model.idea.IdeaProject
 import org.gradle.tooling.model.idea.IdeaSingleEntryLibraryDependency
+import org.gradle.tooling.model.internal.ImmutableDomainObjectSet
 import spock.lang.Ignore
 
 import static org.gradle.integtests.tooling.fixture.ToolingApiModelChecker.checkGradleProject
@@ -44,8 +45,8 @@ class IsolatedProjectsToolingApiIdeaProjectIntegrationTest extends AbstractIsola
 
         then:
         fixture.assertStateStored {
-            // IdeaProject, intermediate IsolatedGradleProjectInternal, IsolatedIdeaModuleInternal
-            modelsCreated(":", 3)
+            // IdeaProject, plugin application "model", intermediate IsolatedGradleProjectInternal, IsolatedIdeaModuleInternal
+            modelsCreated(":", 4)
         }
 
         then:
@@ -70,8 +71,8 @@ class IsolatedProjectsToolingApiIdeaProjectIntegrationTest extends AbstractIsola
 
         then:
         fixture.assertStateStored {
-            // BasicIdeaProject, intermediate IsolatedGradleProjectInternal, IsolatedIdeaModuleInternal
-            modelsCreated(":", 3)
+            // BasicIdeaProject, plugin application "model", intermediate IsolatedGradleProjectInternal, IsolatedIdeaModuleInternal
+            modelsCreated(":", 4)
         }
 
         then:
@@ -106,14 +107,13 @@ class IsolatedProjectsToolingApiIdeaProjectIntegrationTest extends AbstractIsola
 
         then:
         fixture.assertStateStored {
-            // IdeaProject, intermediate IsolatedGradleProjectInternal, IsolatedIdeaModuleInternal
-            modelsCreated(":", 3)
-            // intermediate IsolatedGradleProject, IsolatedIdeaModule
-            modelsCreated(":lib1", 2)
-            modelsCreated(":lib1:lib11", 2)
+            // IdeaProject, plugin application "model", intermediate IsolatedGradleProjectInternal, IsolatedIdeaModuleInternal
+            modelsCreated(":", 4)
+            // plugin application "model", intermediate IsolatedGradleProject, IsolatedIdeaModule
+            modelsCreated(":lib1", 3)
+            modelsCreated(":lib1:lib11", 3)
         }
 
-        then:
         checkIdeaProject(ideaModel, expectedIdeaModel)
     }
 
@@ -144,7 +144,6 @@ class IsolatedProjectsToolingApiIdeaProjectIntegrationTest extends AbstractIsola
             modelsCreated(":lib1", 4)
         }
 
-        then:
         checkIdeaProject(ideaModel, expectedIdeaModel)
     }
 
@@ -177,13 +176,12 @@ class IsolatedProjectsToolingApiIdeaProjectIntegrationTest extends AbstractIsola
 
         then:
         fixture.assertStateStored {
-            // IdeaProject, intermediate IsolatedGradleProjectInternal, IsolatedIdeaModuleInternal
-            modelsCreated(":", 3)
-            // intermediate IsolatedGradleProject, IsolatedIdeaModule
-            modelsCreated(":lib1", 2)
+            // IdeaProject, plugin application "model", intermediate IsolatedGradleProjectInternal, IsolatedIdeaModuleInternal
+            modelsCreated(":", 4)
+            // plugin application "model", intermediate IsolatedGradleProject, IsolatedIdeaModule
+            modelsCreated(":lib1", 3)
         }
 
-        then:
         checkIdeaProject(ideaModel, expectedIdeaModel)
     }
 
@@ -233,14 +231,13 @@ class IsolatedProjectsToolingApiIdeaProjectIntegrationTest extends AbstractIsola
 
         then:
         fixture.assertStateStored {
-            // IdeaProject, intermediate IsolatedGradleProjectInternal, IsolatedIdeaModuleInternal
-            modelsCreated(":", 3)
-            // intermediate IsolatedGradleProject, IsolatedIdeaModule
-            modelsCreated(":lib1", 2)
-            modelsCreated(":lib2", 2)
+            // IdeaProject, plugin application "model", intermediate IsolatedGradleProjectInternal, IsolatedIdeaModuleInternal
+            modelsCreated(":", 4)
+            // plugin application "model", intermediate IsolatedGradleProject, IsolatedIdeaModule
+            modelsCreated(":lib1", 3)
+            modelsCreated(":lib2", 3)
         }
 
-        then:
         checkIdeaProject(ideaModel, expectedIdeaModel)
     }
 
@@ -286,14 +283,13 @@ class IsolatedProjectsToolingApiIdeaProjectIntegrationTest extends AbstractIsola
 
         then:
         fixture.assertStateStored {
-            // BasicIdeaProject, intermediate IsolatedGradleProjectInternal, IsolatedIdeaModuleInternal
-            modelsCreated(":", 3)
+            // BasicIdeaProject, plugin application "model", intermediate IsolatedGradleProjectInternal, IsolatedIdeaModuleInternal
+            modelsCreated(":", 4)
             // intermediate IsolatedGradleProject, IsolatedIdeaModule
-            modelsCreated(":api", 2)
-            modelsCreated(":impl", 2)
+            modelsCreated(":api", 3)
+            modelsCreated(":impl", 3)
         }
 
-        then:
         checkIdeaProject(ideaModel, expectedIdeaModel)
     }
 
@@ -324,18 +320,15 @@ class IsolatedProjectsToolingApiIdeaProjectIntegrationTest extends AbstractIsola
 
         then:
         fixture.assertStateStored {
-            // IdeaProject, intermediate IsolatedGradleProjectInternal, IsolatedIdeaModuleInternal
-            modelsCreated(":", 3)
-            // intermediate IsolatedGradleProject, IsolatedIdeaModule
-            modelsCreated(":lib1", 2)
+            // IdeaProject, plugin application "model", intermediate IsolatedGradleProjectInternal, IsolatedIdeaModuleInternal
+            modelsCreated(":", 4)
+            // plugin application "model", intermediate IsolatedGradleProject, IsolatedIdeaModule
+            modelsCreated(":lib1", 3)
         }
 
-        then:
         checkIdeaProject(ideaModel, expectedIdeaModel)
     }
 
-    // TODO: fix before merge
-    @Ignore
     def "ensures unique name for all Idea modules in composite"() {
         singleProjectBuildInRootFolder("buildA") {
             buildFile << """
@@ -389,40 +382,61 @@ class IsolatedProjectsToolingApiIdeaProjectIntegrationTest extends AbstractIsola
             }
         }
 
-        when:
-        executer.withArguments(ENABLE_CLI)
-        def allProjects = runBuildAction(new FetchAllIdeaProjects())
+        when: "fetching without Isolated Projects"
+        def expectedResult = runBuildAction(new FetchAllIdeaProjects())
 
         then:
-        fixture.assertStateStored {
-            buildModelCreated()
-            // IdeaProject, intermediate IsolatedGradleProjectInternal, IsolatedIdeaModuleInternal
-            modelsCreated(":", 3)
-            // intermediate IsolatedGradleProject, IsolatedIdeaModule
-            modelsCreated(":buildB", 2)
-            modelsCreated(":buildB:b1", 2)
-            modelsCreated(":buildB:b2", 2)
-            modelsCreated(":buildC", 2)
-            modelsCreated(":buildD", 2)
-            modelsCreated(":buildD:b1", 2)
-            modelsCreated(":buildD:buildC", 2)
-        }
-        allProjects.allIdeaProjects.name == ['buildA', 'buildB', 'buildC', 'buildD']
+        expectedResult.allIdeaProjects.name == ['buildA', 'buildB', 'buildC', 'buildD']
 
         // This is not really correct: the IdeaProject for including build should contain all IDEA modules
         // However, it appears that IDEA 2017 depends on this behaviour, and iterates over the included builds to get all modules
-        allProjects.rootIdeaProject.name == 'buildA'
-        allProjects.rootIdeaProject.modules.name == ['buildA']
+        expectedResult.rootIdeaProject.name == 'buildA'
+        expectedResult.rootIdeaProject.modules.name == ['buildA']
 
-        def moduleA = allProjects.rootIdeaProject.modules[0]
+        def moduleA = expectedResult.rootIdeaProject.modules[0]
         moduleA.dependencies.each {
             assert it instanceof IdeaModuleDependency
         }
         moduleA.dependencies.targetModuleName == ['buildB-b1', 'buildA-buildC', 'buildD-b1']
 
-        allProjects.getIdeaProject('buildB').modules.name == ['buildB', 'buildB-b1', 'b2']
-        allProjects.getIdeaProject('buildC').modules.name == ['buildA-buildC']
-        allProjects.getIdeaProject('buildD').modules.name == ['buildD', 'buildD-b1', 'buildD-buildC']
+        expectedResult.getIdeaProject('buildB').modules.name == ['buildB', 'buildB-b1', 'b2']
+        expectedResult.getIdeaProject('buildC').modules.name == ['buildA-buildC']
+        expectedResult.getIdeaProject('buildD').modules.name == ['buildD', 'buildD-b1', 'buildD-buildC']
+
+        when: "fetching with Isolated Projects"
+        executer.withArguments(ENABLE_CLI)
+        def result = runBuildAction(new FetchAllIdeaProjects())
+
+        then:
+        fixture.assertStateStored {
+            buildModelCreated()
+            // IdeaProject, plugin application "model", intermediate IsolatedGradleProjectInternal, IsolatedIdeaModuleInternal
+            modelsCreated(":", 4)
+            // IdeaProject, plugin application "model", intermediate IsolatedGradleProject, IsolatedIdeaModule
+            modelsCreated(":buildB", 4)
+            modelsCreated(":buildC", 4)
+            modelsCreated(":buildD", 4)
+            // plugin application "model", intermediate IsolatedGradleProject, IsolatedIdeaModule
+            modelsCreated(":buildB:b1", 3)
+            modelsCreated(":buildB:b2", 3)
+            modelsCreated(":buildD:b1", 3)
+            modelsCreated(":buildD:buildC", 3)
+        }
+
+        checkModel(result, expectedResult, [
+            [{ ImmutableDomainObjectSet.of(it.allIdeaProjects) }, { a, e -> checkIdeaProject(a, e) } ]
+        ])
+
+        when: "fetching again with Isolated Projects"
+        executer.withArguments(ENABLE_CLI)
+        def anotherResult = runBuildAction(new FetchAllIdeaProjects())
+
+        then:
+        fixture.assertStateLoaded()
+
+        checkModel(anotherResult, expectedResult, [
+            [{ ImmutableDomainObjectSet.of(it.allIdeaProjects) }, { a, e -> checkIdeaProject(a, e) } ]
+        ])
     }
 
     private static void checkIdeaProject(IdeaProject actual, IdeaProject expected) {
