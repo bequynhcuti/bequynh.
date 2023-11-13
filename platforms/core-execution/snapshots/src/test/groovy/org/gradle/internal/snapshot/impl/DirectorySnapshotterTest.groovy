@@ -435,7 +435,7 @@ class DirectorySnapshotterTest extends Specification {
         where:
         type   | message
         "dir"  | "java.nio.file.AccessDeniedException: %s"
-        "file" | "java.io.FileNotFoundException: %s (Permission denied)"
+        "file" | "Failed to create MD5 hash for file '%s' as it does not exist."
     }
 
 
