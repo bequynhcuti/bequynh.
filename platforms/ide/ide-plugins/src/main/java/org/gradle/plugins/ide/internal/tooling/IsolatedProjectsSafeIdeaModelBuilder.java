@@ -37,6 +37,7 @@ import org.gradle.plugins.ide.internal.tooling.idea.DefaultIdeaProject;
 import org.gradle.plugins.ide.internal.tooling.idea.IsolatedIdeaModuleInternal;
 import org.gradle.plugins.ide.internal.tooling.java.DefaultInstalledJdk;
 import org.gradle.plugins.ide.internal.tooling.model.DefaultGradleProject;
+import org.gradle.tooling.provider.model.ParameterizedToolingModelBuilder;
 import org.gradle.tooling.provider.model.internal.IntermediateToolingModelProvider;
 
 import javax.annotation.Nullable;
@@ -51,7 +52,7 @@ import java.util.stream.Collectors;
  * Builds the {@link org.gradle.tooling.model.idea.IdeaProject} model in Isolated Projects-compatible way.
  */
 @NonNullApi
-public class IsolatedProjectsSafeIdeaModelBuilder implements IdeaModelBuilderInternal {
+public class IsolatedProjectsSafeIdeaModelBuilder implements IdeaModelBuilderInternal, ParameterizedToolingModelBuilder<IdeaModelParameter> {
 
     private final IntermediateToolingModelProvider intermediateToolingModelProvider;
     private final GradleProjectBuilderInternal gradleProjectBuilder;
@@ -67,18 +68,41 @@ public class IsolatedProjectsSafeIdeaModelBuilder implements IdeaModelBuilderInt
     }
 
     @Override
+    public Class<IdeaModelParameter> getParameterType() {
+        return IdeaModelParameter.class;
+    }
+
+    @Override
+    public Object buildAll(String modelName, IdeaModelParameter parameter, Project project) {
+        return buildForRoot(project, parameter.getOfflineDependencyResolution());
+    }
+
+    @Override
     public DefaultIdeaProject buildAll(String modelName, Project project) {
         return buildForRoot(project, false);
     }
 
     @Override
     public DefaultIdeaProject buildForRoot(Project project, boolean offlineDependencyResolution) {
-        // TODO: support the case when target is not root project
         Project root = project.getRootProject();
+        IdeaModelParameter parameter = createParameter(offlineDependencyResolution);
+        if (!root.equals(project)) {
+            return fetchForRoot(root, parameter);
+        }
+
         // Ensure unique module names for dependencies substituted from included builds
         applyIdeaProjectToBuildTree(root);
-        IsolatedIdeaModuleParameter parameter = createParameter(offlineDependencyResolution);
+
         return buildRoot(root, parameter);
+    }
+
+    private DefaultIdeaProject fetchForRoot(Project root, IdeaModelParameter parameter) {
+        return intermediateToolingModelProvider.getModels(
+            Collections.singletonList(root),
+            "org.gradle.tooling.model.idea.IdeaProject",
+            DefaultIdeaProject.class,
+            parameter
+        ).get(0);
     }
 
     private void applyIdeaProjectToBuildTree(Project root) {
@@ -100,7 +124,7 @@ public class IsolatedProjectsSafeIdeaModelBuilder implements IdeaModelBuilderInt
         }
     }
 
-    private DefaultIdeaProject buildRoot(Project rootProject, IsolatedIdeaModuleParameter parameter) {
+    private DefaultIdeaProject buildRoot(Project rootProject, IdeaModelParameter parameter) {
         // We have to apply the plugin to the root, because users might have done it themselves, and overridden some settings via the extension
         // This means, the plugin has to be made CC and IP compatible, at least for the root
         rootProject.getPluginManager().apply(IdeaPlugin.class);
@@ -157,7 +181,7 @@ public class IsolatedProjectsSafeIdeaModelBuilder implements IdeaModelBuilderInt
         return getMaxCompatibility(isolatedModules, IsolatedIdeaModuleInternal::getJavaTargetCompatibility);
     }
 
-    private List<IsolatedIdeaModuleInternal> getIsolatedIdeaModules(List<Project> allProjects, IsolatedIdeaModuleParameter parameter) {
+    private List<IsolatedIdeaModuleInternal> getIsolatedIdeaModules(List<Project> allProjects, IdeaModelParameter parameter) {
         return intermediateToolingModelProvider
             .getModels(allProjects, IsolatedIdeaModuleInternal.class, parameter);
     }
@@ -181,9 +205,10 @@ public class IsolatedProjectsSafeIdeaModelBuilder implements IdeaModelBuilderInt
             .orElse(IdeaModuleSupport.FALLBACK_MODULE_JAVA_COMPATIBILITY_VERSION);
     }
 
-    private static IsolatedIdeaModuleParameter createParameter(boolean offlineDependencyResolution) {
+    private static IdeaModelParameter createParameter(boolean offlineDependencyResolution) {
         return () -> offlineDependencyResolution;
     }
+
 
     @NonNullApi
     private static class IdeaModuleBuilder {

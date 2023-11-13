@@ -34,11 +34,11 @@ import java.util.Set;
  * Builds the {@link IsolatedIdeaModuleInternal} model that contains information about a project and its tasks.
  */
 @NonNullApi
-public class IsolatedIdeaModuleInternalBuilder implements ParameterizedToolingModelBuilder<IsolatedIdeaModuleParameter> {
+public class IsolatedIdeaModuleInternalBuilder implements ParameterizedToolingModelBuilder<IdeaModelParameter> {
 
     @Override
-    public Class<IsolatedIdeaModuleParameter> getParameterType() {
-        return IsolatedIdeaModuleParameter.class;
+    public Class<IdeaModelParameter> getParameterType() {
+        return IdeaModelParameter.class;
     }
 
     @Override
@@ -47,7 +47,7 @@ public class IsolatedIdeaModuleInternalBuilder implements ParameterizedToolingMo
     }
 
     @Override
-    public IsolatedIdeaModuleInternal buildAll(String modelName, IsolatedIdeaModuleParameter parameter, Project project) {
+    public IsolatedIdeaModuleInternal buildAll(String modelName, IdeaModelParameter parameter, Project project) {
         return build(project, parameter.getOfflineDependencyResolution());
     }
 

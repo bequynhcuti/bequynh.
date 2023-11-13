@@ -49,6 +49,11 @@ public interface IntermediateToolingModelProvider {
     <T> List<T> getModels(List<Project> targets, Class<T> modelType, Object modelBuilderParameter);
 
     /**
+     * Fetches models of a given type for the given projects passing a parameter to the underlying builder.
+     */
+    <T> List<T> getModels(List<Project> targets, String modelName, Class<T> modelType, Object modelBuilderParameter);
+
+    /**
      * Applies a plugin of a given type to the given projects.
      */
     // TODO: how would this work with caching?

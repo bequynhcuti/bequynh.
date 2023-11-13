@@ -117,8 +117,6 @@ class IsolatedProjectsToolingApiIdeaProjectIntegrationTest extends AbstractIsola
         checkIdeaProject(ideaModel, expectedIdeaModel)
     }
 
-    // TODO: fix before merge
-    @Ignore
     def "can fetch IdeaProject model for non-root project"() {
         settingsFile << """
             rootProject.name = 'root'
@@ -141,10 +139,9 @@ class IsolatedProjectsToolingApiIdeaProjectIntegrationTest extends AbstractIsola
 
         then:
         fixture.assertStateStored {
-            // IdeaProject, intermediate IsolatedGradleProjectInternal, IsolatedIdeaModuleInternal
-            modelsCreated(":", 3)
-            // intermediate IsolatedGradleProject, IsolatedIdeaModule
-            modelsCreated(":lib1", 2)
+            buildModelCreated()
+            modelsCreated(":", 4)
+            modelsCreated(":lib1", 4)
         }
 
         then:

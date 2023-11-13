@@ -19,7 +19,7 @@ package org.gradle.plugins.ide.internal.tooling;
 import org.gradle.api.NonNullApi;
 
 @NonNullApi
-public interface IsolatedIdeaModuleParameter {
+public interface IdeaModelParameter {
 
     boolean getOfflineDependencyResolution();
 
