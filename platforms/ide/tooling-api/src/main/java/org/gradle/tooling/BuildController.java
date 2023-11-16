@@ -211,6 +211,9 @@ public interface BuildController {
     boolean getCanQueryProjectModelInParallel(Class<?> modelType);
 
     /**
+     * Sends an intermediate result back to the client application. The client application can receive this result
+     * by registering a {@link IntermediateModelListener}.
+     *
      * @since 8.6
      */
     <T> void sendIntermediate(Class<T> modelType, T model);
