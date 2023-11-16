@@ -191,6 +191,7 @@ dependencies {
 
     integTestImplementation(project(":workers"))
     integTestImplementation(project(":dependency-management"))
+    integTestImplementation(project(":hashing"))
     integTestImplementation(project(":launcher"))
     integTestImplementation(project(":plugins"))
     integTestImplementation(project(":war"))
@@ -200,7 +201,6 @@ dependencies {
     integTestImplementation(libs.littleproxy)
     integTestImplementation(testFixtures(project(":native")))
     integTestImplementation(testFixtures(project(":file-temp")))
-
 
     testRuntimeOnly(project(":distributions-core")) {
         because("ProjectBuilder tests load services from a Gradle distribution.")
