@@ -17,6 +17,7 @@
 package org.gradle.tooling;
 
 import org.gradle.api.Action;
+import org.gradle.api.Incubating;
 import org.gradle.tooling.model.Model;
 import org.gradle.tooling.model.gradle.GradleBuild;
 
@@ -216,5 +217,6 @@ public interface BuildController {
      *
      * @since 8.6
      */
+    @Incubating
     <T> void sendIntermediate(Class<T> modelType, T model);
 }
