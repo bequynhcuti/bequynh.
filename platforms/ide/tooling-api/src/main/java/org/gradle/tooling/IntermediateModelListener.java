@@ -26,6 +26,6 @@ import org.gradle.api.Incubating;
  * @since 8.6
  */
 @Incubating
-public interface IntermediateModelListener {
-    void onModel(Object model);
+public interface IntermediateModelListener<T> {
+    void onModel(T model);
 }
