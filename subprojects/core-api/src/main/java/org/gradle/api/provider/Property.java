@@ -101,6 +101,7 @@ public interface Property<T> extends Provider<T>, HasConfigurableValue {
      *
      * @since 8.6
      */
+    @Incubating
     void setToConventionIfUnset();
 
     /**
