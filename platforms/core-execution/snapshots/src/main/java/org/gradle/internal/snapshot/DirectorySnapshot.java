@@ -18,6 +18,7 @@ package org.gradle.internal.snapshot;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Interner;
 import org.gradle.internal.file.FileMetadata.AccessType;
 import org.gradle.internal.file.FileType;
 import org.gradle.internal.hash.HashCode;
@@ -48,6 +49,14 @@ public class DirectorySnapshot extends AbstractFileSystemLocationSnapshot {
         super(absolutePath, name, accessType);
         this.contentHash = contentHash;
         this.children = children;
+    }
+
+    @Override
+    protected DirectorySnapshot doRelocate(String targetPath, String name, Interner<String> interner) {
+        ImmutableList<ChildMap.Entry<FileSystemLocationSnapshot>> relocatedChildren = children.stream()
+            .map(child -> child.map((relativePath, snapshot) -> snapshot.relocate(targetPath + "/" + relativePath, interner)))
+            .collect(ImmutableList.toImmutableList());
+        return new DirectorySnapshot(targetPath, name, getAccessType(), contentHash, ChildMapFactory.childMapFromSorted(relocatedChildren));
     }
 
     @Override
